@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050a13">
+    <title>Jarvis Voice Assistant</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 34px 24px 50px;
+            background: #f5f6f8;
+            color: #eaf3ff;
+            font-family: Arial, sans-serif;
+        }
+        .assistant {
+            width: min(100%, 1186px);
+            min-height: 750px;
+            margin: 0 auto;
+            padding: 48px 40px 54px;
+            overflow: hidden;
+            background: #050a13;
+            text-align: center;
+            box-shadow: 0 22px 55px #08101d24;
+        }
+        .eyebrow, .caption, .quick-label {
+            color: #00c7e8;
+            font-family: Consolas, monospace;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+        }
+        .eyebrow { margin: 0 0 12px; font-size: 14px; }
+        h1 {
+            margin: 0;
+            font-size: clamp(30px, 5vw, 46px);
+            line-height: 1.15;
+            letter-spacing: -.035em;
+        }
+        .mic-area {
+            position: relative;
+            display: grid;
+            width: 400px;
+            height: 370px;
+            max-width: 100%;
+            margin: 28px auto 24px;
+            place-items: center;
+        }
+        .ring, .mic-button { position: absolute; border-radius: 50%; }
+        .ring { border: 1px solid #00c8e858; pointer-events: none; }
+        .ring-one { width: 350px; height: 350px; }
+        .ring-two { width: 310px; height: 310px; border-style: dashed; opacity: .65; }
+        .ring-three {
+            width: 250px;
+            height: 250px;
+            border: 18px solid #08c9e51b;
+            box-shadow: 0 0 50px #00d9f52b;
+        }
+        .mic-button {
+            z-index: 1;
+            display: grid;
+            width: 220px;
+            height: 220px;
+            padding: 20px;
+            place-items: center;
+            align-content: center;
+            gap: 12px;
+            border: 2px solid #00c6e8;
+            background: radial-gradient(circle at 50% 35%, #062a3d, #031127 70%);
+            color: #19d8f4;
+            box-shadow: 0 0 40px #00c8e844, inset 0 0 35px #00c8e822;
+            cursor: pointer;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .mic-button:hover { transform: scale(1.035); box-shadow: 0 0 54px #00c8e877; }
+        .mic-button:disabled { cursor: wait; opacity: .8; }
+        .mic-button.listening { animation: pulse 1.15s ease-in-out infinite alternate; }
+        .mic-button span { font: 14px Consolas, monospace; letter-spacing: .08em; }
+        .mic-icon { width: 48px; height: 62px; fill: currentColor; }
+        .sound-bars { position: absolute; bottom: 4px; display: flex; height: 18px; gap: 6px; align-items: center; }
+        .sound-bars i { width: 5px; height: 8px; border-radius: 4px; background: #00c8e8; opacity: .7; }
+        .sound-bars i:nth-child(3n) { height: 15px; }
+        .sound-bars i:nth-child(2n) { height: 11px; }
+        @keyframes pulse { to { box-shadow: 0 0 70px #00c8e899, inset 0 0 42px #00c8e844; } }
+        .speech-card {
+            width: min(100%, 720px);
+            min-height: 96px;
+            margin: 0 auto 38px;
+            padding: 17px 22px;
+            border: 1px solid #07506a;
+            border-radius: 15px;
+            background: #080f1d;
+        }
+        .caption { margin: 0 0 10px; font-size: 11px; }
+        #recognized { min-height: 26px; margin: 0; color: #c6d2e3; font-size: 19px; font-style: italic; }
+        .quick-label { margin: 0 0 16px; color: #9aaabe; font-size: 13px; }
+        .quick-commands {
+            display: grid;
+            width: min(100%, 840px);
+            margin: 0 auto;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+        .quick-button {
+            min-height: 48px;
+            border: 1px solid #07506a;
+            border-radius: 12px;
+            background: #08111e;
+            color: #43d9ee;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .18s ease, border-color .18s ease;
+        }
+        .quick-button:hover { border-color: #00c8e8; background: #0b2030; }
+        .quick-icon { margin-right: 7px; }
+        .google { color: #42c8f5; }
+        .youtube { color: #ff6670; }
+        .facebook { color: #68a9ff; }
+        .linkedin { color: #55bce8; }
+        .search-area {
+            width: min(100%, 840px);
+            margin: 0 auto;
+            padding: 28px 24px;
+            color: #172033;
+            text-align: center;
+        }
+        .search-area p { margin: 0 0 14px; color: #667286; }
+        form { display: flex; gap: 10px; }
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 13px 14px;
+            border: 1px solid #ccd4e0;
+            border-radius: 9px;
+            background: white;
+            font-size: 16px;
+        }
+        .send-button {
+            padding: 0 20px;
+            border: 0;
+            border-radius: 9px;
+            background: #315ee7;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #status { min-height: 24px; margin: 12px 0; color: #536176; }
+        @media (max-width: 650px) {
+            body { padding: 12px; }
+            .assistant { min-height: 0; padding: 36px 18px 38px; }
+            .mic-area { height: 320px; margin: 18px auto; }
+            .ring-one { width: 300px; height: 300px; }
+            .ring-two { width: 265px; height: 265px; }
+            .ring-three { width: 220px; height: 220px; }
+            .mic-button { width: 190px; height: 190px; }
+            .quick-commands { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .speech-card { margin-bottom: 30px; }
+            .search-area { padding: 24px 6px; }
+        }
+        @media (max-width: 390px) {
+            form { flex-direction: column; }
+            .send-button { min-height: 46px; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section class="assistant" aria-labelledby="page-title">
+            <p class="eyebrow">AI Voice Command Interface</p>
+            <h1 id="page-title">Tap Mic and Speak to Jarvis</h1>
+
+            <div class="mic-area">
+                <div class="ring ring-one"></div>
+                <div class="ring ring-two"></div>
+                <div class="ring ring-three"></div>
+                <button class="mic-button" id="mic-button" type="button" aria-label="Start voice command">
+                    <svg class="mic-icon" viewBox="0 0 48 64" aria-hidden="true">
+                        <path d="M24 40a9 9 0 0 0 9-9V11a9 9 0 0 0-18 0v20a9 9 0 0 0 9 9Zm16-10a2.5 2.5 0 0 0-5 0 11 11 0 0 1-22 0 2.5 2.5 0 0 0-5 0 16 16 0 0 0 13.5 15.8V53H14a2.5 2.5 0 0 0 0 5h20a2.5 2.5 0 0 0 0-5h-7.5v-7.2A16 16 0 0 0 40 30Z"/>
+                    </svg>
+                    <span id="mic-label">CLICK TO SPEAK</span>
+                </button>
+                <div class="sound-bars" aria-hidden="true">
+                    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+            </div>
+
+            <div class="speech-card">
+                <p class="caption">Recognized Speech</p>
+                <p id="recognized" aria-live="polite">Tap the microphone and say a command.</p>
+            </div>
+
+            <p class="quick-label">Or click a quick command</p>
+            <div class="quick-commands">
+                <button class="quick-button" type="button" data-command="open google"><span class="quick-icon google">G</span>Google</button>
+                <button class="quick-button" type="button" data-command="open youtube"><span class="quick-icon youtube">▶</span>YouTube</button>
+                <button class="quick-button" type="button" data-command="open facebook"><span class="quick-icon facebook">f</span>Facebook</button>
+                <button class="quick-button" type="button" data-command="open linkedin"><span class="quick-icon linkedin">in</span>LinkedIn</button>
+            </div>
+        </section>
+
+        <section class="search-area" aria-label="Text command and search">
+            <p>Prefer typing? Enter a command or product to search.</p>
+            <form id="command-form">
+                <input id="command" name="command" type="text"
+                       placeholder="e.g. open YouTube or wireless headphones"
+                       autocomplete="off" required>
+                <button class="send-button" id="submit-button" type="submit">Send</button>
+            </form>
+            <p id="status" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById("command-form");
+        const input = document.getElementById("command");
+        const submitButton = document.getElementById("submit-button");
+        const micButton = document.getElementById("mic-button");
+        const micLabel = document.getElementById("mic-label");
+        const status = document.getElementById("status");
+        const recognized = document.getElementById("recognized");
+
+        async function sendCommand(command, resultTab = null) {
+            status.textContent = "Working...";
+
+            try {
+                // Send the command to Flask and display the response it returns.
+                const response = await fetch("/process", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ command: command })
+                });
+                const data = await response.json();
+                status.textContent = data.message;
+
+                if (data.url) {
+                    // Open the actual result in a new tab; use the reserved tab if blocked.
+                    const openedTab = window.open(data.url, "_blank");
+                    if (openedTab) {
+                        if (resultTab) resultTab.close();
+                    } else if (resultTab) {
+                        resultTab.location.href = data.url;
+                    } else {
+                        status.textContent += " Allow pop-ups to open the result.";
+                    }
+                } else if (resultTab) {
+                    resultTab.close();
+                }
+            } catch (error) {
+                status.textContent = "Could not reach Jarvis. Check that the app is running.";
+                if (resultTab) resultTab.close();
+            }
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            // Reserve a tab during the click so popup blockers allow the API result to open.
+            const resultTab = window.open("about:blank", "_blank");
+            if (!resultTab) {
+                status.textContent = "Allow pop-ups for this page, then try again.";
+                return;
+            }
+            submitButton.disabled = true;
+            recognized.textContent = input.value;
+            await sendCommand(input.value, resultTab);
+            submitButton.disabled = false;
+        });
+
+        document.querySelectorAll(".quick-button").forEach((button) => {
+            button.addEventListener("click", () => {
+                const command = button.dataset.command;
+                recognized.textContent = command;
+                const resultTab = window.open("about:blank", "_blank");
+                if (!resultTab) {
+                    status.textContent = "Allow pop-ups for this page, then try again.";
+                    return;
+                }
+                sendCommand(command, resultTab);
+            });
+        });
+
+        micButton.addEventListener("click", () => {
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            if (!SpeechRecognition) {
+                status.textContent = "Voice input is not supported here. Try Chrome or Edge.";
+                return;
+            }
+
+            // Reserve the tab on the click so popup blockers allow the recognized result to open.
+            const resultTab = window.open("about:blank", "_blank");
+            if (!resultTab) {
+                status.textContent = "Allow pop-ups for this page, then try again.";
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            let heardCommand = false;
+            recognition.lang = "en-US";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            micButton.disabled = true;
+            micButton.classList.add("listening");
+            micLabel.textContent = "LISTENING...";
+            status.textContent = "Listening... Say a website command or a product to search.";
+
+            recognition.onresult = (event) => {
+                heardCommand = true;
+                const command = event.results[0][0].transcript.trim();
+                input.value = command;
+                recognized.textContent = '"' + command + '"';
+                sendCommand(command, resultTab);
+            };
+
+            recognition.onerror = (event) => {
+                resultTab.close();
+                if (event.error === "not-allowed") {
+                    status.textContent = "Allow microphone access in your browser, then try again.";
+                } else {
+                    status.textContent = "Voice input failed. Please try again.";
+                }
+            };
+
+            recognition.onend = () => {
+                micButton.disabled = false;
+                micButton.classList.remove("listening");
+                micLabel.textContent = "CLICK TO SPEAK";
+                if (!heardCommand) {
+                    resultTab.close();
+                    status.textContent = "No speech detected. Click the microphone and try again.";
+                }
+            };
+
+            recognition.start();
+        });
+    </script>
+</body>
+</html>
